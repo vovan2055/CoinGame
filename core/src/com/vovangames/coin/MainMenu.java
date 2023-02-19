@@ -4,32 +4,25 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.ScreenAdapter;
 
 public class MainMenu extends ScreenAdapter {
-
-    /* renamed from: g */
-    MyGdxGame f271g;
+    MyGdxGame g;
 
     @Override
-    public void resize(int i, int i2) {
+    public void resize(int width, int height) {
     }
-
     @Override
     public void show() {
     }
-
-    public MainMenu(MyGdxGame myGdxGame) {
-        this.f271g = myGdxGame;
+    public MainMenu(MyGdxGame myGdxGame) {g = myGdxGame;
     }
-
     @Override
     public void hide() {
-        this.f271g.stage.clear();
+        g.stage.clear();
     }
-
     @Override
     public void render(float f) {
         Gdx.gl.glViewport(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         Gdx.gl.glClear(16640);
-        Gdx.gl.glClearColor(0.15f, 0.15f, 0.15f, (float) 1);
-        this.f271g.stage.draw();
+        Gdx.gl.glClearColor(0.15f, 0.15f, 0.15f, 1);
+        g.stage.draw();
     }
 }

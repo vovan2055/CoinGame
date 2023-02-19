@@ -36,18 +36,28 @@ public class Cube extends Actor {
 
     public void setBulletTargets(Array<Cube> array, float srcAngle) {
         Vector2 vector2;
-        this.bullet = true;
-        this.multipleTargets = true;
-        this.bulletTargets = array;
+        bullet = true;
+        multipleTargets = true;
+        bulletTargets = array;
+        velocity = new Vector2(5, 0).rotateDeg(srcAngle);
+    }
 
-        this.velocity = new Vector2(5, 0).rotateDeg(srcAngle);
+    public void setBulletTargets(float srcAngle, Cube... targets) {
+        Vector2 vector2;
+        bullet = true;
+        multipleTargets = true;
+        bulletTargets = new Array<>();
+        for (Cube c : targets) {
+            bulletTargets.add(c);
+        }
+        velocity = new Vector2(5, 0).rotateDeg(srcAngle);
     }
 
     @Override
     public void setSize(float w, float h) {
         super.setSize(w, h);
-        this.sprite.setSize(w, h);
-        this.sprite.setOriginCenter();
+        sprite.setSize(w, h);
+        sprite.setOriginCenter();
     }
 
     @Override
@@ -73,15 +83,16 @@ public class Cube extends Actor {
     }
 
     public void resetBullet() {
-        this.bulletLife = (float) 0;
-        this.bullet = false;
-        this.multipleTargets = false;
-        boolean remove = remove();
+        bulletLife = (float) 0;
+        bullet = false;
+        multipleTargets = false;
+        remove();
     }
 
     @Override
-    public void moveBy(float f, float f2) {
-        super.moveBy(f, f2);
+    public void moveBy(float x, float y) {
+        super.moveBy(x, y);
+        sprite.translate(x, y);
     }
 
     public boolean collidesWith(Actor actor) {
@@ -107,11 +118,11 @@ public class Cube extends Actor {
                         resetBullet();
                     }
                 }
-            } else if (collidesWith(this.bulletTarget)) {
-                this.bulletTarget.kill();
+            } else if (collidesWith(bulletTarget)) {
+                bulletTarget.kill();
                 resetBullet();
             }
-            if (this.bulletLife >= ((float) 3)) {
+            if (bulletLife >= 3) {
                 resetBullet();
             }
         }

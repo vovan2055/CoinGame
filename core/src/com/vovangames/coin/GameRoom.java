@@ -6,12 +6,11 @@ import com.badlogic.gdx.InputMultiplexer;
 import com.badlogic.gdx.ScreenAdapter;
 import com.badlogic.gdx.graphics.Camera;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import com.badlogic.gdx.graphics.g3d.utils.CameraInputController;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
@@ -20,14 +19,12 @@ import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Image;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.ProgressBar;
-import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.ui.Touchpad;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
-import com.badlogic.gdx.scenes.scene2d.utils.Drawable;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.Align;
-import com.vovangames.coin.Platform;
+import com.vovangames.coin.utils.BulletSpawner;
 import com.vovangames.coin.utils.Cube;
 import com.vovangames.coin.utils.ParticleSystem;
 import java.util.Random;
@@ -38,79 +35,36 @@ public class GameRoom extends ScreenAdapter {
     public static int actorSize = 50;
     public static int barHeight = 80;
     public static int serverMode = 0;
-    Label Coins;
 
-    /* renamed from: Cs */
     public ParticleSystem Cs;
-
-    /* renamed from: Hp */
-    Label Hp;
-    SpriteBatch batch;
-    Cube bullet;
-    CameraInputController c;
     Camera cam;
     Cube coin;
     Image coinIndicator;
     ProgressBar coins;
-    float counter = ((float) 0);
-
-    /* renamed from: cs */
     ProgressBar.ProgressBarStyle cs;
-
-    /* renamed from: g */
     public MyGdxGame g;
     ProgressBar health;
-
-    /* renamed from: hp */
     private int hp = 100;
-
-    /* renamed from: hs */
+    private float shootCd = 0;
     ProgressBar.ProgressBarStyle hs;
-
-    /* renamed from: ip */
     String ip = "0.0.0.0";
     boolean isAttacked = false;
     boolean isBig = false;
-
-    /* renamed from: l */
     Label l;
-
-    /* renamed from: m */
     InputMultiplexer m;
     public Platform platform;
     Cube player;
-    Vector2 playerpos;
-
-    /* renamed from: ps */
     public ParticleSystem ps;
     private int score = 0;
     Cube sharp;
     TextButton shoot;
-    Skin skin;
-
-    /* renamed from: ss */
-    public ParticleSystem ss;
+    ParticleSystem ss;
     Stage stage;
-
-    /* renamed from: t */
     TimerTask t;
-    Thread thread;
     Timer timer;
-    float touchX = ((float) 0);
-    float touchY = ((float) 0);
     Touchpad touchpad;
-
-    /* renamed from: ts */
     Touchpad.TouchpadStyle ts;
-
-    /* renamed from: ui */
     Stage ui;
-
-    /* renamed from: x */
-    float x = ((float) 0);
-
-    /* renamed from: y */
-    float f270y = ((float) 0);
 
     @Override
     public void hide() {
@@ -141,31 +95,26 @@ public class GameRoom extends ScreenAdapter {
             shoot.setSize((float) 150, (float) 100);
             shoot.setPosition((float) (((int) (((double) Gdx.graphics.getWidth()) * 0.75d)) - 75), (float) 100);
             shoot.addListener(new ClickListener() {
-
                 public void clicked(InputEvent inputEvent, float x, float y) {
-
-                    if (bullet == null) {
-                        bullet.setPosition(player.getX(), player.getY());
-                        stage.addActor(bullet);
-                        bullet.setBulletTarget(sharp, player.getRotation());
-                    }
+                    shoot();
                 }
             });
-            ui.addActor(this.shoot);
-            ui.addActor(this.touchpad);
-        } else if (platform2 == Platform.DESKTOP) {
+            ui.addActor(shoot);
+            ui.addActor(touchpad);
+        } else if (platform == Platform.DESKTOP) {
+            //TODO
         }
 
-        this.health = new ProgressBar( 0, 100, 0.1f, false, hs);
-        this.health.setPosition((float) 0, (float) ((Gdx.graphics.getHeight() - barHeight) - 20));
-        boolean value = this.health.setValue(hp);
+        health = new ProgressBar( 0, 100, 0.1f, false, hs);
+        health.setPosition((float) 0, (float) ((Gdx.graphics.getHeight() - barHeight) - 20));
+        health.setValue(hp);
         barHeight = (int) this.health.getMinHeight();
-        this.health.setSize((float) Gdx.graphics.getWidth(), (float) barHeight);
+        health.setSize((float) Gdx.graphics.getWidth(), (float) barHeight);
 
-        this.coins = new ProgressBar(0, 100, 0.1f, false, cs);
-        this.coins.setPosition((float) 0, (this.health.getY() - ((float) barHeight)) - ((float) 20));
-        this.coins.setSize((float) Gdx.graphics.getWidth(), (float) barHeight);
-        boolean value2 = this.coins.setValue((float) this.score);
+        coins = new ProgressBar(0, 100, 0.1f, false, cs);
+        coins.setPosition((float) 0, (this.health.getY() - ((float) barHeight)) - ((float) 20));
+        coins.setSize((float) Gdx.graphics.getWidth(), (float) barHeight);
+        coins.setValue((float) this.score);
 
 
         l = new Label("ip", new Label.LabelStyle(new BitmapFont(), Color.WHITE));
@@ -180,6 +129,19 @@ public class GameRoom extends ScreenAdapter {
         m.addProcessor(ui);
         Gdx.input.setInputProcessor(m);
     }
+
+    public void shoot() {
+        /*if (shootCd >= 2f) {
+            shootCd = 0;
+            Cube bullet = new Cube(new Texture(Gdx.files.internal("cparticle.png")));
+            bullet.setSize(30, 30);
+            bullet.setPosition(player.getX(), player.getY());
+            stage.addActor(bullet);
+            bullet.setBulletTarget(sharp, player.getRotation());
+            }*/
+        BulletSpawner.spawnBullets(BulletSpawner.SpawnType.FAN, stage, player, player.sprite.getTexture(), 5, player.getRotation(), 20, sharp);
+    }
+
     @Override
     public void show() {
 
@@ -199,54 +161,40 @@ public class GameRoom extends ScreenAdapter {
                 setPosition((float) MathUtils.random(Gdx.graphics.getWidth()), (float) MathUtils.random(Gdx.graphics.getHeight()));
             }
         };
-        this.sharp.setPosition((float) 0, (float) 0);
-        this.sharp.setSize((float) actorSize, (float) actorSize);
-        this.sharp.setOrigin((float) (actorSize / 2), (float) (actorSize / 2));
-        this.coin = new Cube(new Texture(Gdx.files.internal("cparticle.png")));
-        this.coin.setPosition((float) 0, (float) (Gdx.graphics.getHeight() - 50));
-        this.coin.setSize((float) actorSize, (float) actorSize);
-        this.coin.setOrigin((float) (actorSize / 2), (float) (actorSize / 2));
+        sharp.setPosition((float) 0, (float) 0);
+        sharp.setSize((float) actorSize, (float) actorSize);
+        sharp.setOrigin((float) (actorSize / 2), (float) (actorSize / 2));
+        coin = new Cube(new Texture(Gdx.files.internal("cparticle.png")));
+        coin.setPosition((float) 0, (float) (Gdx.graphics.getHeight() - 50));
+        coin.setSize((float) actorSize, (float) actorSize);
+        coin.setOrigin((float) (actorSize / 2), (float) (actorSize / 2));
 
 
         coinIndicator = new Image(new Texture(Gdx.files.internal("cparticle.png")));
         coinIndicator.setSize((float) (actorSize / 2), (float) (actorSize / 2));
         coinIndicator.setOrigin(coinIndicator.getX() + actorSize / 4f, -actorSize);
 
-
-        bullet = new Cube(new Texture(Gdx.files.internal("cparticle.png")));
-        bullet.setSize(30, 30);
         ts = new Touchpad.TouchpadStyle();
-
-
-
-
-
         ts.background = ts.knob = new TextureRegionDrawable(new TextureRegion(new Texture(Gdx.files.internal("touchpad.png"))));
 
         hs =new ProgressBar.ProgressBarStyle();
-
         cs = new ProgressBar.ProgressBarStyle();
 
-        TextureAtlas textureAtlas2 = new TextureAtlas();
+        TextureAtlas atlas = new TextureAtlas();
 
         Texture texture11 = new Texture(Gdx.files.internal("bars.png"));
-        textureAtlas2.addRegion("hb", texture11, 0, 0, 32, 32);
-        textureAtlas2.addRegion("hk", texture11, 32, 0, 32, 32);
-        textureAtlas2.addRegion("ck", texture11, 64, 0, 32, 32);
-        textureAtlas2.addRegion("cb", texture11, 96, 0, 32, 32);
-        hs.background = new TextureRegionDrawable(new TextureRegion(textureAtlas2.findRegion("hb")));
+        atlas.addRegion("hb", texture11, 0, 0, 32, 32);
+        atlas.addRegion("hk", texture11, 32, 0, 32, 32);
+        atlas.addRegion("ck", texture11, 64, 0, 32, 32);
+        atlas.addRegion("cb", texture11, 96, 0, 32, 32);
+        hs.background = new TextureRegionDrawable(new TextureRegion(atlas.findRegion("hb")));
 
 
 
-        hs.knobBefore = new TextureRegionDrawable(new TextureRegion((TextureRegion) textureAtlas2.findRegion("hk")));
-        ProgressBar.ProgressBarStyle progressBarStyle5 = cs;
+        hs.knobBefore = new TextureRegionDrawable(new TextureRegion(atlas.findRegion("hk")));
+        cs.background = new TextureRegionDrawable(new TextureRegion(atlas.findRegion("cb")));
 
-
-        progressBarStyle5.background = new TextureRegionDrawable(new TextureRegion((TextureRegion) textureAtlas2.findRegion("cb")));
-
-
-
-        cs.knobBefore = new TextureRegionDrawable(new TextureRegion(textureAtlas2.findRegion("ck")));
+        cs.knobBefore = new TextureRegionDrawable(new TextureRegion(atlas.findRegion("ck")));
         stage.addActor(player);
         stage.addActor(sharp);
         stage.addActor(coin);
@@ -287,43 +235,42 @@ public class GameRoom extends ScreenAdapter {
 
     @Override
     public void render(float delta) {
-        this.coin.rotateBy(250 * delta);
-        this.coinIndicator.setPosition(player.getX(Align.center) - ((float) (actorSize / 4)), player.getY(Align.center) + ((float) actorSize));
-        Image image = this.coinIndicator;
-
-        image.setRotation(new Vector2(this.coin.getX(), this.coin.getY()).sub(this.player.getX(), this.player.getY()).angleDeg() - 90);
+        coin.rotateBy(250 * delta);
+        shootCd += delta;
+        coinIndicator.setPosition(player.getX(Align.center) - ((float) (actorSize / 4)), player.getY(Align.center) + ((float) actorSize));
+        coinIndicator.setRotation(new Vector2(coin.getX(), coin.getY()).sub(player.getX(), player.getY()).angleDeg() - 90);
         readInput();
-        if (this.isAttacked) {
-            this.sharp.moveBy((this.player.getX() - this.sharp.getX()) * delta * ((float) this.score), (this.player.getY() - this.sharp.getY()) * delta * ((float) this.score));
+        if (isAttacked) {
+            sharp.moveBy((player.getX() - sharp.getX()) * delta, (player.getY(Align.center) - sharp.getY(Align.center)) * delta);
         }
-        if (this.coin.collidesWith(this.player)) {
-            if (this.isBig) {
-                this.score += 4;
+        if (coin.collidesWith(player)) {
+            if (isBig) {
+                score += 4;
             }
             coin.setX(new Random().nextInt(Gdx.graphics.getWidth() - actorSize));
 
             coin.setY(new Random().nextInt(Gdx.graphics.getHeight() - actorSize));
-            Cs.posX = (int) (this.coin.getX() + (((float) actorSize) / 2.0f));
-            Cs.posY = (int) (((float) Gdx.graphics.getHeight()) - this.coin.getY());
-            this.isAttacked = true;
-            this.score++;
+            Cs.posX = (int) (coin.getX() + actorSize / 2f);
+            Cs.posY = (int) (Gdx.graphics.getHeight() - coin.getY());
+            isAttacked = true;
+            score++;
 
             if (new Random().nextInt(20) == 9) {
-                this.coin.setSize((float) (actorSize * 3), (float) (actorSize * 3));
-                this.isBig = true;
-                this.coin.setColor(Color.GREEN);
+                coin.setSize(actorSize * 3, actorSize * 3);
+                isBig = true;
+                coin.setColor(Color.GREEN);
             } else {
-                this.coin.setSize((float) actorSize, (float) actorSize);
-                this.coin.setColor(Color.WHITE);
-                this.isBig = false;
+                coin.setSize(actorSize, actorSize);
+                coin.setColor(Color.WHITE);
+                isBig = false;
             }
-            boolean value = this.coins.setValue((float) this.score);
+            coins.setValue(score);
         }
         if (sharp.collidesWith(player)) {
             ss.size++;
             ss.lifetime += 1;
-            this.sharp.kill();
-            this.sharp.setSize(this.sharp.getWidth() + ((float) 5), this.sharp.getHeight() + ((float) 5));
+            sharp.kill();
+            sharp.setSize(this.sharp.getWidth() + ((float) 5), this.sharp.getHeight() + ((float) 5));
 
 
             hp -= new Random().nextInt(5);
@@ -334,13 +281,13 @@ public class GameRoom extends ScreenAdapter {
             }
         }
 
-        Vector3 lerp = this.cam.position.lerp(new Vector3(this.player.getX(), this.player.getY(), (float) 0), 0.05f);
+        cam.position.lerp(new Vector3(this.player.getX(), this.player.getY(), (float) 0), 0.05f);
         ps.posX = (int) (this.player.getX() + (((float) actorSize) / 4.0f));
         ps.posY = (int) ((((float) Gdx.graphics.getHeight()) - this.player.getY()) - (((float) actorSize) / 4.0f));
         ss.posX = (int) (this.sharp.getX() + (((float) actorSize) / 4.0f));
         ss.posY = (int) ((((float) Gdx.graphics.getHeight()) - this.sharp.getY()) - (((float) actorSize) / 4.0f));
         Gdx.gl.glViewport(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-        Gdx.gl.glClear(16384);
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
         Gdx.gl.glClearColor(0.1f, 0.1f, 0.1f, (float) 1);
         l.setText(this.player.getName());
         stage.draw();
@@ -348,15 +295,13 @@ public class GameRoom extends ScreenAdapter {
     }
 
     public void readInput() {
-        Vector2 vector2;
-        Platform platform2 = this.platform;
-        if (platform2 == Platform.ANDROID) {
+        if (platform == Platform.ANDROID) {
             if (this.touchpad.isTouched()) {
 
                 player.setRotation(new Vector2(this.touchpad.getKnobPercentX(), this.touchpad.getKnobPercentY()).angleDeg());
                 player.moveBy(this.touchpad.getKnobPercentX() * ((float) 10), this.touchpad.getKnobPercentY() * ((float) 10));
             }
-        } else if (platform2 == Platform.DESKTOP) {
+        } else if (platform == Platform.DESKTOP) {
             handleKeyboard();
         }
     }
@@ -366,6 +311,7 @@ public class GameRoom extends ScreenAdapter {
         if (Gdx.input.isKeyPressed(Input.Keys.A)) player.moveBy(-10,  0);
         if (Gdx.input.isKeyPressed(Input.Keys.S)) player.moveBy(0, -10);
         if (Gdx.input.isKeyPressed(Input.Keys.D)) player.moveBy(10, 0);
+        if (Gdx.input.isKeyPressed(Input.Keys.SPACE)) shoot();
     }
 
     @Override
@@ -374,9 +320,9 @@ public class GameRoom extends ScreenAdapter {
     }
 
     @Override
-    public void resize(int i, int i2) {
-        this.stage.getCamera().viewportWidth = (float) i;
-        this.stage.getCamera().viewportHeight = (float) i2;
+    public void resize(int width, int height) {
+        stage.getCamera().viewportWidth = width;
+        this.stage.getCamera().viewportHeight = height;
         setupGui();
     }
 

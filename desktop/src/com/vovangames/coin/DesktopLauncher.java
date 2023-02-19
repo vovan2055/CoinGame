@@ -10,6 +10,7 @@ public class DesktopLauncher {
 		Lwjgl3ApplicationConfiguration config = new Lwjgl3ApplicationConfiguration();
 		config.setForegroundFPS(60);
 		config.setWindowedMode(1000, 1000);
+		config.setWindowIcon("player.png");
 		config.setTitle("CoinGame");
 		MyGdxGame g = new MyGdxGame();
 		g.p = Platform.DESKTOP;
