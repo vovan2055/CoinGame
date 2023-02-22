@@ -27,6 +27,8 @@ import com.badlogic.gdx.utils.Align;
 import com.vovangames.coin.utils.BulletSpawner;
 import com.vovangames.coin.utils.Cube;
 import com.vovangames.coin.utils.ParticleSystem;
+import com.vovangames.coin.utils.Wall;
+
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -35,8 +37,6 @@ public class GameRoom extends ScreenAdapter {
     public static int actorSize = 50;
     public static int barHeight = 80;
     public static int serverMode = 0;
-
-    public ParticleSystem Cs;
     Camera cam;
     Cube coin;
     Image coinIndicator;
@@ -54,16 +54,15 @@ public class GameRoom extends ScreenAdapter {
     InputMultiplexer m;
     public Platform platform;
     Cube player;
-    public ParticleSystem ps;
     private int score = 0;
     Cube sharp;
     TextButton shoot;
-    ParticleSystem ss;
     Stage stage;
     TimerTask t;
     Timer timer;
     Touchpad touchpad;
     Touchpad.TouchpadStyle ts;
+    Wall w;
     Stage ui;
 
     @Override
@@ -131,15 +130,10 @@ public class GameRoom extends ScreenAdapter {
     }
 
     public void shoot() {
-        /*if (shootCd >= 2f) {
+        if (shootCd >= 2f) {
             shootCd = 0;
-            Cube bullet = new Cube(new Texture(Gdx.files.internal("cparticle.png")));
-            bullet.setSize(30, 30);
-            bullet.setPosition(player.getX(), player.getY());
-            stage.addActor(bullet);
-            bullet.setBulletTarget(sharp, player.getRotation());
-            }*/
-        BulletSpawner.spawnBullets(BulletSpawner.SpawnType.FAN, stage, player, player.sprite.getTexture(), 5, player.getRotation(), 20, sharp);
+            BulletSpawner.spawnBullets(BulletSpawner.SpawnType.FAN, stage, player, player.sprite.getTexture(), 5, player.getRotation(), 20, sharp);
+        }
     }
 
     @Override
@@ -182,23 +176,21 @@ public class GameRoom extends ScreenAdapter {
 
         TextureAtlas atlas = new TextureAtlas();
 
-        Texture texture11 = new Texture(Gdx.files.internal("bars.png"));
-        atlas.addRegion("hb", texture11, 0, 0, 32, 32);
-        atlas.addRegion("hk", texture11, 32, 0, 32, 32);
-        atlas.addRegion("ck", texture11, 64, 0, 32, 32);
-        atlas.addRegion("cb", texture11, 96, 0, 32, 32);
+        Texture tex = new Texture(Gdx.files.internal("bars.png"));
+        atlas.addRegion("hb", tex, 0, 0, 32, 32);
+        atlas.addRegion("hk", tex, 32, 0, 32, 32);
+        atlas.addRegion("ck", tex, 64, 0, 32, 32);
+        atlas.addRegion("cb", tex, 96, 0, 32, 32);
         hs.background = new TextureRegionDrawable(new TextureRegion(atlas.findRegion("hb")));
-
-
-
         hs.knobBefore = new TextureRegionDrawable(new TextureRegion(atlas.findRegion("hk")));
         cs.background = new TextureRegionDrawable(new TextureRegion(atlas.findRegion("cb")));
-
         cs.knobBefore = new TextureRegionDrawable(new TextureRegion(atlas.findRegion("ck")));
         stage.addActor(player);
         stage.addActor(sharp);
         stage.addActor(coin);
         stage.addActor(coinIndicator);
+        w = new Wall(400, 250);
+        stage.addActor(w);
         cam = stage.getCamera();
         timer =  new Timer();
         t = new TimerTask() {
@@ -210,32 +202,12 @@ public class GameRoom extends ScreenAdapter {
         this.timer.scheduleAtFixedRate(t, 10000, 10000);
         setupGui();
         health.setValue(100);
-        ps = new ParticleSystem(new Texture(Gdx.files.internal("player.png")));
-        ss = new ParticleSystem( new Texture(Gdx.files.internal("sharp.png")));
-        Cs = new ParticleSystem(new Texture(Gdx.files.internal("cparticle.png")));
-        ps.batch = this.stage.getBatch();
-        Cs.batch = this.stage.getBatch();
-        ss.batch = this.stage.getBatch();
-        stage.addActor(ps);
-        stage.addActor(ss);
-        stage.addActor(Cs);
-        ss.posX = (int) sharp.getX();
-        ss.posY = (int) (Gdx.graphics.getHeight() - sharp.getY());
-        ss.lifetime = 0.5f;
-        ps.lifetime = 0.5f;
-        Cs.lifetime = 2.0f;
-        Cs.fixedAngle = true;
-        Cs.angle = (float) 45;
-        ss.setZIndex(0);
-        ps.setZIndex(0);
-        Cs.setZIndex(0);
-        Cs.posX = (int) (this.coin.getX() + (((float) actorSize) / 2.0f));
-        Cs.posY = (int) (((float) Gdx.graphics.getHeight()) - this.coin.getY());
     }
 
     @Override
     public void render(float delta) {
         coin.rotateBy(250 * delta);
+        w.collide(player);
         shootCd += delta;
         coinIndicator.setPosition(player.getX(Align.center) - ((float) (actorSize / 4)), player.getY(Align.center) + ((float) actorSize));
         coinIndicator.setRotation(new Vector2(coin.getX(), coin.getY()).sub(player.getX(), player.getY()).angleDeg() - 90);
@@ -250,8 +222,6 @@ public class GameRoom extends ScreenAdapter {
             coin.setX(new Random().nextInt(Gdx.graphics.getWidth() - actorSize));
 
             coin.setY(new Random().nextInt(Gdx.graphics.getHeight() - actorSize));
-            Cs.posX = (int) (coin.getX() + actorSize / 2f);
-            Cs.posY = (int) (Gdx.graphics.getHeight() - coin.getY());
             isAttacked = true;
             score++;
 
@@ -267,8 +237,6 @@ public class GameRoom extends ScreenAdapter {
             coins.setValue(score);
         }
         if (sharp.collidesWith(player)) {
-            ss.size++;
-            ss.lifetime += 1;
             sharp.kill();
             sharp.setSize(this.sharp.getWidth() + ((float) 5), this.sharp.getHeight() + ((float) 5));
 
@@ -282,10 +250,6 @@ public class GameRoom extends ScreenAdapter {
         }
 
         cam.position.lerp(new Vector3(this.player.getX(), this.player.getY(), (float) 0), 0.05f);
-        ps.posX = (int) (this.player.getX() + (((float) actorSize) / 4.0f));
-        ps.posY = (int) ((((float) Gdx.graphics.getHeight()) - this.player.getY()) - (((float) actorSize) / 4.0f));
-        ss.posX = (int) (this.sharp.getX() + (((float) actorSize) / 4.0f));
-        ss.posY = (int) ((((float) Gdx.graphics.getHeight()) - this.sharp.getY()) - (((float) actorSize) / 4.0f));
         Gdx.gl.glViewport(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
         Gdx.gl.glClearColor(0.1f, 0.1f, 0.1f, (float) 1);
@@ -307,11 +271,12 @@ public class GameRoom extends ScreenAdapter {
     }
 
     public void handleKeyboard() {
-        if (Gdx.input.isKeyPressed(Input.Keys.W)) player.moveBy(0, 10);
-        if (Gdx.input.isKeyPressed(Input.Keys.A)) player.moveBy(-10,  0);
-        if (Gdx.input.isKeyPressed(Input.Keys.S)) player.moveBy(0, -10);
-        if (Gdx.input.isKeyPressed(Input.Keys.D)) player.moveBy(10, 0);
-        if (Gdx.input.isKeyPressed(Input.Keys.SPACE)) shoot();
+            if (Gdx.input.isKeyPressed(Input.Keys.W)) player.moveBy(0, 10);
+            if (Gdx.input.isKeyPressed(Input.Keys.A)) player.moveBy(-10, 0);
+            if (Gdx.input.isKeyPressed(Input.Keys.S)) player.moveBy(0, -10);
+            if (Gdx.input.isKeyPressed(Input.Keys.D)) player.moveBy(10, 0);
+            if (Gdx.input.isKeyPressed(Input.Keys.SPACE)) shoot();
+
     }
 
     @Override
