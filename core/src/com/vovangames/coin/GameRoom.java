@@ -287,7 +287,7 @@ public class GameRoom extends ScreenAdapter {
     @Override
     public void resize(int width, int height) {
         stage.getCamera().viewportWidth = width;
-        this.stage.getCamera().viewportHeight = height;
+        stage.getCamera().viewportHeight = height;
         setupGui();
     }
 

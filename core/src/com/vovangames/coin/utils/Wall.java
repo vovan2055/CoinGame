@@ -14,27 +14,9 @@ public class Wall extends Actor {
 
     public void collide(Actor victim) {
         Rectangle r = new Rectangle(getX(), getY(), getWidth(), getHeight());
-        Circle c = new Circle(victim.getX(Align.center), victim.getY(Align.center), victim.getHeight() / 2);
-
-        float closestX = c.x;
-        float closestY = c.y;
-
-        if (c.x < r.x) {
-            closestX = r.x;
-        } else if (c.x > r.x + r.width) {
-            closestX = r.x + r.width;
-        }
-
-        if (c.y < r.y) {
-            closestY = r.y;
-        } else if (c.y > r.y + r.height) {
-            closestY = r.y + r.height;
-        }
-
-       if (c.contains(closestX, closestY)) {
-           Vector2 v = new Vector2(c.x - closestX,c.y - closestY);
-           v.scl((v.len() / c.radius));
-           victim.moveBy(v.x, v.y);
-       }
+        Rectangle r2 = new Rectangle(victim.getX(), victim.getY(), victim.getWidth(), victim.getHeight());
+        Rectangle r3 = new Rectangle(victim.getX(), victim.getY(), victim.getWidth(), victim.getHeight());
+        Intersector.intersectRectangles(r, r2, r3);
+        victim.setPosition(r3.x, r3.y);
     }
 }

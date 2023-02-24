@@ -129,7 +129,7 @@ public class ParticleSystem extends Actor implements Disposable {
 
         public Particle(ParticleSystem ps, Sprite sprite) {
 
-            this.dir = new Vector2((float) 1, (float) 1);
+            this.dir = new Vector2(1, 1);
             this.life = (float) 0;
 
             r = new Random();
@@ -144,7 +144,7 @@ public class ParticleSystem extends Actor implements Disposable {
             endAlpha = (float) 1;
             startSize = 30;
             endSize = 0;
-            dir.rotateDeg(MathUtils.random(-180, 180));
+            dir.setToRandomDirection();
             dir.scl(velocity);
         }
     }
