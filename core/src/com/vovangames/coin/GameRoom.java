@@ -14,6 +14,11 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
+import com.badlogic.gdx.physics.box2d.Body;
+import com.badlogic.gdx.physics.box2d.BodyDef;
+import com.badlogic.gdx.physics.box2d.PolygonShape;
+import com.badlogic.gdx.physics.box2d.World;
+import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Image;
@@ -24,10 +29,9 @@ import com.badlogic.gdx.scenes.scene2d.ui.Touchpad;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.Align;
-import com.vovangames.coin.utils.BulletSpawner;
-import com.vovangames.coin.utils.Cube;
-import com.vovangames.coin.utils.ParticleSystem;
-import com.vovangames.coin.utils.Wall;
+import com.badlogic.gdx.utils.Array;
+import com.badlogic.gdx.utils.ScreenUtils;
+import com.vovangames.coin.utils.*;
 
 import java.util.Random;
 import java.util.Timer;
@@ -62,7 +66,6 @@ public class GameRoom extends ScreenAdapter {
     Timer timer;
     Touchpad touchpad;
     Touchpad.TouchpadStyle ts;
-    Wall w;
     Stage ui;
 
     @Override
@@ -159,10 +162,11 @@ public class GameRoom extends ScreenAdapter {
         sharp.setSize((float) actorSize, (float) actorSize);
         sharp.setOrigin((float) (actorSize / 2), (float) (actorSize / 2));
         coin = new Cube(new Texture(Gdx.files.internal("cparticle.png")));
+        sharp.setUserObject("");
         coin.setPosition((float) 0, (float) (Gdx.graphics.getHeight() - 50));
         coin.setSize((float) actorSize, (float) actorSize);
         coin.setOrigin((float) (actorSize / 2), (float) (actorSize / 2));
-
+        coin.setUserObject("");
 
         coinIndicator = new Image(new Texture(Gdx.files.internal("cparticle.png")));
         coinIndicator.setSize((float) (actorSize / 2), (float) (actorSize / 2));
@@ -170,10 +174,8 @@ public class GameRoom extends ScreenAdapter {
 
         ts = new Touchpad.TouchpadStyle();
         ts.background = ts.knob = new TextureRegionDrawable(new TextureRegion(new Texture(Gdx.files.internal("touchpad.png"))));
-
         hs =new ProgressBar.ProgressBarStyle();
         cs = new ProgressBar.ProgressBarStyle();
-
         TextureAtlas atlas = new TextureAtlas();
 
         Texture tex = new Texture(Gdx.files.internal("bars.png"));
@@ -189,8 +191,14 @@ public class GameRoom extends ScreenAdapter {
         stage.addActor(sharp);
         stage.addActor(coin);
         stage.addActor(coinIndicator);
-        w = new Wall(400, 250);
-        stage.addActor(w);
+        Slider s = new Slider(player.sprite.getTexture());
+        Array<Cube> arr = new Array<>();
+        arr.add(player);
+        s.players = arr;
+        s.setPosition(100, 300);
+        s.setSize(100, 500);
+        s.pushDir = new Vector2(0, 5);
+        stage.addActor(s);
         cam = stage.getCamera();
         timer =  new Timer();
         t = new TimerTask() {
@@ -202,12 +210,15 @@ public class GameRoom extends ScreenAdapter {
         this.timer.scheduleAtFixedRate(t, 10000, 10000);
         setupGui();
         health.setValue(100);
+        Array<Actor> load = CMapFileLoader.load(Gdx.files.internal("outMap.cmap"), player.sprite.getTexture());
+        for (Actor a : load) {
+            stage.addActor(a);
+        }
     }
 
     @Override
     public void render(float delta) {
         coin.rotateBy(250 * delta);
-        w.collide(player);
         shootCd += delta;
         coinIndicator.setPosition(player.getX(Align.center) - ((float) (actorSize / 4)), player.getY(Align.center) + ((float) actorSize));
         coinIndicator.setRotation(new Vector2(coin.getX(), coin.getY()).sub(player.getX(), player.getY()).angleDeg() - 90);
@@ -225,12 +236,14 @@ public class GameRoom extends ScreenAdapter {
             isAttacked = true;
             score++;
 
-            if (new Random().nextInt(20) == 9) {
+            if (MathUtils.randomBoolean(0.05f)) {
                 coin.setSize(actorSize * 3, actorSize * 3);
                 isBig = true;
+                coin.setOrigin(Align.center);
                 coin.setColor(Color.GREEN);
             } else {
                 coin.setSize(actorSize, actorSize);
+                coin.setOrigin(Align.center);
                 coin.setColor(Color.WHITE);
                 isBig = false;
             }
@@ -251,8 +264,7 @@ public class GameRoom extends ScreenAdapter {
 
         cam.position.lerp(new Vector3(this.player.getX(), this.player.getY(), (float) 0), 0.05f);
         Gdx.gl.glViewport(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-        Gdx.gl.glClearColor(0.1f, 0.1f, 0.1f, (float) 1);
+        ScreenUtils.clear(0.1f, 0.1f, 0.1f, 1f);
         l.setText(this.player.getName());
         stage.draw();
         ui.draw();
@@ -271,12 +283,26 @@ public class GameRoom extends ScreenAdapter {
     }
 
     public void handleKeyboard() {
-            if (Gdx.input.isKeyPressed(Input.Keys.W)) player.moveBy(0, 10);
-            if (Gdx.input.isKeyPressed(Input.Keys.A)) player.moveBy(-10, 0);
-            if (Gdx.input.isKeyPressed(Input.Keys.S)) player.moveBy(0, -10);
-            if (Gdx.input.isKeyPressed(Input.Keys.D)) player.moveBy(10, 0);
+            if (Gdx.input.isKeyPressed(Input.Keys.W)) move(0, 10);
+            if (Gdx.input.isKeyPressed(Input.Keys.A)) move(-10, 0);
+            if (Gdx.input.isKeyPressed(Input.Keys.S)) move(0, -10);
+            if (Gdx.input.isKeyPressed(Input.Keys.D)) move(10, 0);
             if (Gdx.input.isKeyPressed(Input.Keys.SPACE)) shoot();
 
+    }
+
+    public void move(float x, float y) {
+        player.moveBy(x, y);
+        for (Actor a : stage.getActors()) {
+            while (player.collidesWith(a) && a != player) {
+                if (a instanceof Slider) {
+                    player.moveBy(((Slider) a).pushDir.x * Gdx.graphics.getDeltaTime(), ((Slider) a).pushDir.y * Gdx.graphics.getDeltaTime());
+                    break;
+                }
+                else if (a.getUserObject() != null) break;
+                else player.moveBy(-x * 0.1f, -y * 0.1f);
+            }
+        }
     }
 
     @Override

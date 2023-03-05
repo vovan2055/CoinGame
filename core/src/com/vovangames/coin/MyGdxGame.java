@@ -56,14 +56,14 @@ public class MyGdxGame extends Game {
         start.setSize((float) HttpStatus.SC_MULTIPLE_CHOICES, (float) 100);
 
 
-        host = new Label((CharSequence) "XOCT", new Label.LabelStyle(new BitmapFont(), Color.WHITE));
+        host = new Label("XOCT", new Label.LabelStyle(new BitmapFont(), Color.WHITE));
         host.setFontScale((float) 5);
         host.setSize((float) HttpStatus.SC_MULTIPLE_CHOICES, (float) 100);
         host.setAlignment(1);
         host.setPosition(start.getX(), start.getY() - 150);
 
 
-        join = new Label((CharSequence) "OK", new Label.LabelStyle(new BitmapFont(), Color.WHITE));
+        join = new Label("OK", new Label.LabelStyle(new BitmapFont(), Color.WHITE));
         join.setFontScale((float) 5);
         join.setSize((float) HttpStatus.SC_MULTIPLE_CHOICES, (float) 100);
         join.setAlignment(1);
