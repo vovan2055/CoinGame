@@ -6,7 +6,6 @@ import com.badlogic.gdx.InputMultiplexer;
 import com.badlogic.gdx.ScreenAdapter;
 import com.badlogic.gdx.graphics.Camera;
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
@@ -14,10 +13,6 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
-import com.badlogic.gdx.physics.box2d.Body;
-import com.badlogic.gdx.physics.box2d.BodyDef;
-import com.badlogic.gdx.physics.box2d.PolygonShape;
-import com.badlogic.gdx.physics.box2d.World;
 import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
@@ -31,22 +26,26 @@ import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ScreenUtils;
+import com.esotericsoftware.kryonet.Connection;
+import com.vovangames.coin.net.Net;
+import com.vovangames.coin.net.NetHandler;
 import com.vovangames.coin.utils.*;
 
+import java.io.IOException;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class GameRoom extends ScreenAdapter {
+public class GameRoom extends ScreenAdapter implements NetHandler {
     public static int actorSize = 50;
     public static int barHeight = 80;
-    public static int serverMode = 0;
+    public int serverMode = 0;
     Camera cam;
     Cube coin;
     Image coinIndicator;
     ProgressBar coins;
     ProgressBar.ProgressBarStyle cs;
-    public MyGdxGame g;
+    public CoinGame g;
     ProgressBar health;
     private int hp = 100;
     private float shootCd = 0;
@@ -67,6 +66,8 @@ public class GameRoom extends ScreenAdapter {
     Touchpad touchpad;
     Touchpad.TouchpadStyle ts;
     Stage ui;
+    int id;
+    boolean isConnected = false;
 
     @Override
     public void hide() {
@@ -76,8 +77,8 @@ public class GameRoom extends ScreenAdapter {
     public void resume() {
     }
 
-    public GameRoom(MyGdxGame myGdxGame, Platform platform) {
-        this.g = myGdxGame;
+    public GameRoom(CoinGame coinGame, Platform platform) {
+        this.g = coinGame;
         this.platform = platform;
     }
 
@@ -118,7 +119,6 @@ public class GameRoom extends ScreenAdapter {
         coins.setSize((float) Gdx.graphics.getWidth(), (float) barHeight);
         coins.setValue((float) this.score);
 
-
         l = new Label("ip", new Label.LabelStyle(new BitmapFont(), Color.WHITE));
         l.setZIndex(4);
         l.setPosition((float) 0, ((float) Gdx.graphics.getHeight()) - l.getHeight());
@@ -126,23 +126,19 @@ public class GameRoom extends ScreenAdapter {
         ui.addActor(health);
         ui.addActor(this.coins);
 
-        m = new InputMultiplexer();
-        m.addProcessor(this.stage);
-        m.addProcessor(ui);
+        m = new InputMultiplexer(stage, ui);
         Gdx.input.setInputProcessor(m);
     }
 
     public void shoot() {
         if (shootCd >= 2f) {
             shootCd = 0;
-            BulletSpawner.spawnBullets(BulletSpawner.SpawnType.FAN, stage, player, player.sprite.getTexture(), 5, player.getRotation(), 20, sharp);
+            BulletSpawner.spawnBullets(BulletSpawner.SpawnType.SINGLE, stage, player, player.sprite.getTexture(), 5, player.getRotation(), 5, sharp);
         }
     }
 
     @Override
     public void show() {
-
-
         stage = new Stage();
         stage.setDebugAll(true);
 
@@ -151,11 +147,10 @@ public class GameRoom extends ScreenAdapter {
         player.setSize((float) actorSize, (float) actorSize);
         player.setOrigin((float) (actorSize / 2), (float) (actorSize / 2));
 
-
-        this.sharp = new Cube(new Texture(Gdx.files.internal("sharp.png"))) {
+        sharp = new Cube(new Texture(Gdx.files.internal("sharp.png"))) {
             @Override
             public void kill() {
-                setPosition((float) MathUtils.random(Gdx.graphics.getWidth()), (float) MathUtils.random(Gdx.graphics.getHeight()));
+                setPosition(MathUtils.random(Gdx.graphics.getWidth()), MathUtils.random(Gdx.graphics.getHeight()));
             }
         };
         sharp.setPosition((float) 0, (float) 0);
@@ -214,6 +209,10 @@ public class GameRoom extends ScreenAdapter {
         for (Actor a : load) {
             stage.addActor(a);
         }
+
+        if (serverMode == 1) Net.initServer();
+        else if (serverMode == 2) Net.initClient();
+
     }
 
     @Override
@@ -266,6 +265,22 @@ public class GameRoom extends ScreenAdapter {
         Gdx.gl.glViewport(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         ScreenUtils.clear(0.1f, 0.1f, 0.1f, 1f);
         l.setText(this.player.getName());
+
+        if (serverMode == 1) {
+            Net.UpdatePlayer p = new Net.UpdatePlayer();
+            p.id = 0;
+            p.x = player.getX();
+            p.y = player.getY();
+            Net.server.server.sendToAllUDP(p);
+        }
+        else if (serverMode == 2 && isConnected) {
+            Net.UpdatePlayer p = new Net.UpdatePlayer();
+            p.id = id;
+            p.x = player.getX();
+            p.y = player.getY();
+            Net.client.client.sendUDP(p);
+        }
+
         stage.draw();
         ui.draw();
     }
@@ -321,5 +336,80 @@ public class GameRoom extends ScreenAdapter {
     public void dispose() {
         stage.dispose();
         ui.dispose();
+        if (serverMode == 2) {
+            Net.client.client.stop();
+            Net.client.client.close();
+            try {
+                Net.client.client.dispose();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            System.out.println("client disposed");
+        }
+        if (serverMode == 1) {
+            Net.server.server.stop();
+            Net.server.server.close();
+            try {
+                Net.server.server.dispose();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            System.out.println("server disposed");
+        }
+    }
+
+    @Override
+    public void receive(Object o) {
+        if (o instanceof Net.NewPlayer) {
+            Cube c = new Cube(player.sprite.getTexture());
+            c.setSize(actorSize, actorSize);
+            c.setName(String.valueOf(((Net.NewPlayer) o).id));
+            stage.addActor(c);
+        } else if (o instanceof Net.UpdatePlayer) {
+            try {
+                Cube c = stage.getRoot().findActor(String.valueOf(((Net.UpdatePlayer) o).id));
+                if (c == null) {
+                    c = new Cube(player.sprite.getTexture());
+                    c.setSize(actorSize, actorSize);
+                    c.setName(String.valueOf(((Net.UpdatePlayer) o).id));
+                    stage.addActor(c);
+                }
+                c.setX(((Net.UpdatePlayer) o).x);
+                c.setY(((Net.UpdatePlayer) o).y);
+            } catch (Exception e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
+        } else if (o instanceof Net.DeletePlayer) {
+            stage.getRoot().findActor(String.valueOf(((Net.DeletePlayer) o).id)).remove();
+        }
+    }
+
+    @Override
+    public void connect(Connection c) {
+        if (serverMode == 2) {
+            id = c.getID();
+
+            Net.NewPlayer n = new Net.NewPlayer();
+            n.id = id;
+            Net.client.client.sendUDP(n);
+            System.out.println("sent new player packet");
+            isConnected = true;
+
+        }
+    }
+
+    @Override
+    public void disconnect(Connection c) {
+        if (serverMode == 2) {
+            Net.client.client.stop();
+            Net.client.client.close();
+            try {
+                Net.client.client.dispose();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            g.setScreen(new MainMenu(g));
+        }
     }
 }

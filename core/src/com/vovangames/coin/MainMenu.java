@@ -4,7 +4,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.ScreenAdapter;
 
 public class MainMenu extends ScreenAdapter {
-    MyGdxGame g;
+    CoinGame g;
 
     @Override
     public void resize(int width, int height) {
@@ -12,7 +12,8 @@ public class MainMenu extends ScreenAdapter {
     @Override
     public void show() {
     }
-    public MainMenu(MyGdxGame myGdxGame) {g = myGdxGame;
+    public MainMenu(CoinGame coinGame) {
+        g = coinGame;
     }
     @Override
     public void hide() {

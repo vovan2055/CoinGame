@@ -35,7 +35,7 @@ public class BulletSpawner {
                 break;
         }
     }
-    public static enum SpawnType {
+    public enum SpawnType {
         SINGLE, RADIAL, FAN
     }
 }

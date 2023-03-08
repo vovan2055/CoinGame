@@ -3,14 +3,12 @@ package com.vovangames.coin;
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
-import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.net.HttpStatus;
-import com.badlogic.gdx.scenes.scene2d.EventListener;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.InputListener;
 import com.badlogic.gdx.scenes.scene2d.Stage;
@@ -18,21 +16,16 @@ import com.badlogic.gdx.scenes.scene2d.ui.Dialog;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.TextField;
 import com.badlogic.gdx.scenes.scene2d.ui.Window;
-import com.badlogic.gdx.scenes.scene2d.ui.Dialog;
-import com.badlogic.gdx.scenes.scene2d.ui.Label;
-import com.badlogic.gdx.scenes.scene2d.ui.TextField;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
-import com.badlogic.gdx.scenes.scene2d.utils.Drawable;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.Align;
-import com.vovangames.coin.Platform;
-import java.util.Random;
+import com.vovangames.coin.net.Net;
 
-public class MyGdxGame extends Game {
+public class CoinGame extends Game {
     TextField IPinput;
     OrthographicCamera cam;
     Dialog d;
-    MyGdxGame g = this;
+    CoinGame g = this;
     Label host;
     Label join;
     public Platform p;
@@ -47,13 +40,13 @@ public class MyGdxGame extends Game {
 
         stage = new Stage();
         stage.setDebugAll(true);
-        start = new Label((CharSequence) "CTAPT", new Label.LabelStyle(new BitmapFont(), Color.WHITE));
+        start = new Label("CTAPT", new Label.LabelStyle(new BitmapFont(), Color.WHITE));
         start.setAlignment(Align.center);
         start.setOrigin(start.getWidth() / 2, start.getHeight() / 2);
         start.setFontScale(5);
         start.setX((float) ((Gdx.graphics.getWidth() / 2) - 150));
         start.setY((float) ((Gdx.graphics.getHeight() / 2) + 100));
-        start.setSize((float) HttpStatus.SC_MULTIPLE_CHOICES, (float) 100);
+        start.setSize(300, 100);
 
 
         host = new Label("XOCT", new Label.LabelStyle(new BitmapFont(), Color.WHITE));
@@ -85,6 +78,7 @@ public class MyGdxGame extends Game {
         ts.messageFontColor = Color.GRAY;
 
         IPinput = new TextField("", ts);
+        IPinput.setAlignment(Align.center);
         IPinput.setMessageText("                    IP...");
         IPinput.setSize(300, 40);
 
@@ -95,7 +89,8 @@ public class MyGdxGame extends Game {
 
                     GameRoom room = new GameRoom(g, p);
                     room.serverMode = 2;
-                    room.ip = IPinput.getText();
+                    Net.address = IPinput.getText();
+                    Net.handler = room;
                     setScreen(room);
                 }
                 return false;
@@ -111,14 +106,16 @@ public class MyGdxGame extends Game {
 
         start.addListener(new ClickListener() {
             public void clicked(InputEvent inputEvent, float f, float f2) {
-
                 setScreen(new GameRoom(g, p));
             }
         });
 
         host.addListener(new ClickListener() {
             public void clicked(InputEvent inputEvent, float f, float f2) {
-                setScreen(new TutorialRoom(g));
+                GameRoom r = new GameRoom(g, p);
+                r.serverMode = 1;
+                Net.handler = r;
+                setScreen(r);
             }
         });
 

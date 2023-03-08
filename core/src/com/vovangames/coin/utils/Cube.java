@@ -43,14 +43,13 @@ public class Cube extends Actor {
     }
 
     public void setBulletTargets(float srcAngle, Cube... targets) {
-        Vector2 vector2;
         bullet = true;
         multipleTargets = true;
         bulletTargets = new Array<>();
         for (Cube c : targets) {
             bulletTargets.add(c);
         }
-        velocity = new Vector2(5, 0).rotateDeg(srcAngle);
+        velocity = new Vector2(20, 0).rotateDeg(srcAngle);
     }
 
     @Override
@@ -83,7 +82,7 @@ public class Cube extends Actor {
     }
 
     public void resetBullet() {
-        bulletLife = (float) 0;
+        bulletLife = 0;
         bullet = false;
         multipleTargets = false;
         remove();

@@ -1,7 +1,6 @@
 package com.vovangames.coin;
 
 import com.badlogic.gdx.ApplicationLogger;
-import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.backends.android.AndroidApplication;
 import com.badlogic.gdx.backends.android.AndroidApplicationConfiguration;
 
@@ -25,7 +24,7 @@ public class AndroidLauncher extends AndroidApplication {
 		config.useGyroscope = false;
 		config.useImmersiveMode = true;
 
-		MyGdxGame g = new MyGdxGame();
+		CoinGame g = new CoinGame();
 		g.p = Platform.ANDROID;
 		initialize(g, config);
 		super.onResume();

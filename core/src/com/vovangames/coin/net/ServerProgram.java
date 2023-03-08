@@ -7,12 +7,15 @@ import java.io.IOException;
 import static com.vovangames.coin.net.Net.*;
 
 public class ServerProgram {
-    Server server;
+    public Server server;
 
     public void init() throws IOException {
         server = new Server();
+        ServerListener s = new ServerListener();
+        s.handler = handler;
+        Net.registerClasses(server);
         server.bind(TCPPort, UDPPort);
         server.start();
-        server.addListener(new ServerListener());
+        server.addListener(s);
     }
 }

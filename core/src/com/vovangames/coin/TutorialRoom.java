@@ -13,15 +13,15 @@ import com.vovangames.coin.utils.Cube;
 public class TutorialRoom extends ScreenAdapter {
     public int actorSize = 50;
     public Cube coin;
-    MyGdxGame g;
+    CoinGame g;
     public Cube player;
     public Cube sharp;
     public Stage stage;
     Touchpad touchpad;
     Touchpad.TouchpadStyle ts;
 
-    public TutorialRoom(MyGdxGame myGdxGame) {
-        g = myGdxGame;
+    public TutorialRoom(CoinGame coinGame) {
+        g = coinGame;
     }
 
     @Override

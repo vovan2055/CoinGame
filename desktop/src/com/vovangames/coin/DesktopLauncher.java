@@ -11,7 +11,7 @@ public class DesktopLauncher {
 		config.setWindowedMode(1000, 1000);
 		config.setWindowIcon("player.png");
 		config.setTitle("CoinGame");
-		MyGdxGame g = new MyGdxGame();
+		CoinGame g = new CoinGame();
 		g.p = Platform.DESKTOP;
 		new Lwjgl3Application(g, config);
 	}

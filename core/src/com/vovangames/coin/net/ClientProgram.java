@@ -8,13 +8,17 @@ import static com.vovangames.coin.net.Net.*;
 
 public class ClientProgram {
 
-    Client client;
+    public Client client;
 
-    public void init() throws IOException {
+    public void init(String address) throws IOException {
+        ServerListener l = new ServerListener();
+        l.handler = Net.handler;
         client = new Client();
+        Net.registerClasses(client.getEndPoint());
         client.start();
-        client.addListener(new ServerListener());
-        client.connect(5000, "127.0.0.1", TCPPort, UDPPort);
+        client.addListener(l);
+
+        client.connect(5000, address, TCPPort, UDPPort);
     }
 
 }
